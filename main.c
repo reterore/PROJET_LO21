@@ -83,7 +83,6 @@ void afficherRegle(regle* r) {
         printf("  Conclusion : ");
         afficherProposition(r->conclusion);
         printf("\n");
-        afficherRegle(r->suiv);
     }
 }
 
@@ -107,48 +106,82 @@ void libererRegle(regle* r) {
 
 // Fonction pour libérer la mémoire de la base de connaissances
 void libererBC(BC baseConnaissances) {
-    libererRegle(baseConnaissances.regles);
+    regle* current = baseConnaissances.regles;
+    while (current != NULL) {
+        regle* suivant = current->suiv;
+        libererRegle(current);
+        current = suivant;
+    }
+}
+
+// Fonction pour ajouter une règle à la base de connaissances
+BC ajouterRegleABase(BC baseConnaissances, regle* nouvelleRegle) {
+    regle* current = baseConnaissances.regles;
+    if (current == NULL) {
+        baseConnaissances.regles = nouvelleRegle;
+    } else {
+        while (current->suiv != NULL) {
+            current = current->suiv;
+        }
+        current->suiv = nouvelleRegle;
+    }
+    return baseConnaissances;
 }
 
 int main() {
-    // Création de quelques propositions
-    proposition* propositionA = creerProposition('A', true);
-    proposition* propositionB = creerProposition('B', false);
-    proposition* propositionC1 = creerProposition('C', true);
-    proposition* propositionC2 = creerProposition('C', false);
+    BC baseConnaissances = creerBC(NULL);
+    int reglesValidees = 0;
 
-    // Création d'une règle initiale
-    regle* regle1 = creerRegle(propositionA, propositionB);
-    printf("Regle avant ajout a la premisse :\n");
-    afficherRegle(regle1);
+    while (reglesValidees < 3) {
+        char choix;
+        printf("Que voulez-vous faire?\n");
+        printf("1. Ajouter une prémisse\n");
+        printf("2. Ajouter une conclusion\n");
+        printf("3. Valider la règle\n");
+        scanf(" %c", &choix);
 
-    // Ajout de propositions à la prémisse
-    regle1->premisse = ajouterPropositionAListe(regle1->premisse, 'C', true);
+        proposition* premisse = NULL;
+        proposition* conclusion = NULL;
 
-    // Affichage de la règle mise à jour
-    printf("Regle apres ajout a la premisse :\n");
-    afficherRegle(regle1);
+        switch (choix) {
+            case '1':
+                printf("Entrez une prémisse (ex: A true): ");
+                char id1;
+                bool valeur1;
+                scanf(" %c %d", &id1, &valeur1);
+                premisse = ajouterPropositionAListe(premisse, id1, valeur1);
+                break;
 
-    // Ajout d'une proposition à la conclusion
-    regle1->conclusion = ajouterPropositionAListe(regle1->conclusion, 'D', false);
+            case '2':
+                printf("Entrez une conclusion (ex: B false): ");
+                char id2;
+                bool valeur2;
+                scanf(" %c %d", &id2, &valeur2);
+                conclusion = ajouterPropositionAListe(conclusion, id2, valeur2);
+                break;
 
-    // Affichage de la règle mise à jour
-    printf("Regle apres ajout a la conclusion :\n");
-    afficherRegle(regle1);
+            case '3':
+                if (premisse != NULL && conclusion != NULL) {
+                    regle* nouvelleRegle = creerRegle(premisse, conclusion);
+                    baseConnaissances = ajouterRegleABase(baseConnaissances, nouvelleRegle);
+                    reglesValidees++;
+                    printf("Regle ajoutée avec succès!\n");
+                } else {
+                    printf("Erreur: La règle doit avoir une prémisse et une conclusion.\n");
+                }
+                break;
 
-    // Ajout d'une condition à la règle
-    regle1->premisse = ajouterPropositionAListe(regle1->premisse, 'C', false);
+            default:
+                printf("Choix invalide. Veuillez entrer 1, 2 ou 3.\n");
+        }
+    }
 
-    // Affichage de la règle mise à jour
-    printf("Regle apres ajout d'une condition a la regle :\n");
-    afficherRegle(regle1);
+    // Affichage de toutes les règles de la base de connaissances
+    printf("Base de connaissances après ajout de 3 règles :\n");
+    afficherRegle(baseConnaissances.regles);
 
     // Libération de la mémoire
-    libererRegle(regle1);
-    libererListePropositions(propositionA);
-    libererListePropositions(propositionB);
-    libererListePropositions(propositionC1);
-    libererListePropositions(propositionC2);
+    libererBC(baseConnaissances);
 
     return 0;
 }
